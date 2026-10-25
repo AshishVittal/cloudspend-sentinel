@@ -1,202 +1,119 @@
-\# CloudSpend Sentinel
+# CloudSpend Sentinel
 
+A serverless AWS cost-monitoring project that generates weekly spending reports, compares costs across AWS services, and stores reports securely in Amazon S3.
 
+## 🎯 Project Goal
 
-A Python-based AWS cost monitoring project that retrieves billing data from AWS Cost Explorer, compares service-level costs across two consecutive 7-day periods, and generates a JSON report highlighting spending increases.
+CloudSpend Sentinel helps AWS users understand where their cloud spending comes from and identify changes in costs before they become unexpected expenses.
 
+## 🏗️ Architecture
 
+```text
+AWS Cost Explorer
+       |
+       v
+AWS Lambda (Python)
+       |
+       +----> Compare previous and current 7-day costs
+       |
+       v
+Private Amazon S3 Bucket
+       |
+       v
+Weekly JSON Cost Report
 
-\## Problem Statement
+Amazon EventBridge Scheduler
+       |
+       +----> Invokes Lambda every Monday at 9:30 AM IST
 
-
-
-AWS costs can be difficult to monitor when multiple services are involved. CloudSpend Sentinel helps make cost changes easier to review by comparing recent costs with the previous week and flagging increases that may need investigation.
-
-
-
-\## Features
-
-
-
-\- Retrieves real AWS cost data using the AWS Cost Explorer API.
-
-\- Groups costs by AWS service.
-
-\- Compares two consecutive 7-day periods.
-
-\- Calculates cost differences and percentage changes.
-
-\- Flags significant increases for investigation.
-
-\- Generates a structured JSON report.
-
-\- Includes automated tests for the report-generation logic.
-
-
-
-\## Architecture
-
-
-
-1\. An IAM user with restricted permissions authenticates the AWS CLI/SDK.
-
-2\. Python uses Boto3 to call AWS Cost Explorer.
-
-3\. Cost data is grouped by AWS service for each period.
-
-4\. The report generator calculates changes and assigns a status.
-
-5\. The results are written to `weekly\_report.json`.
-
-
-
-\## Technologies
-
-
-
-\- Python
-
-\- AWS Cost Explorer
-
-\- AWS IAM
-
-\- AWS CLI
-
-\- Boto3
-
-\- pytest
-
-\- Git and GitHub
-
-
-
-\## Prerequisites
-
-
-
-\- Python installed
-
-\- AWS CLI configured with a profile named `cloudspend`
-
-\- AWS Cost Explorer enabled and available in the account
-
-\- IAM permissions allowing `ce:GetCostAndUsage`
-
-
-
-\## Setup
-
-
-
-Install dependencies:
-
-
-
-```bash
-
-python -m pip install boto3 pytest
-
+Public Demo Dashboard
+       |
+       +----> Displays fictional sample data only
 ```
 
+## 🛠️ AWS Services Used
 
+- **AWS Cost Explorer:** Retrieves cost data grouped by AWS service.
+- **AWS Lambda:** Runs Python code to generate weekly cost reports without managing servers.
+- **Amazon EventBridge Scheduler:** Automatically invokes the Lambda function every Monday.
+- **Amazon S3:** Stores generated JSON reports in a private bucket.
+- **AWS IAM:** Grants the Lambda execution role only the permissions needed for Cost Explorer, S3 report uploads, and logging.
+- **Amazon CloudWatch Logs:** Captures Lambda execution logs for troubleshooting.
 
-Configure AWS credentials securely using the AWS CLI:
+## ⚙️ How It Works
 
+1. EventBridge Scheduler triggers the Lambda function every Monday at 9:30 AM IST.
+2. Lambda requests AWS spending data from Cost Explorer.
+3. The function compares two consecutive, completed seven-day periods.
+4. Costs are grouped by AWS service.
+5. The report includes previous cost, current cost, and the difference.
+6. Lambda saves the JSON report to a private S3 bucket.
+7. CloudWatch Logs records execution details to help diagnose errors.
 
+## 📊 Example Report
 
-```bash
+The following is an illustrative example, not actual billing data.
 
-aws configure --profile cloudspend
-
+```json
+{
+  "currency": "USD",
+  "previous_total_usd": 3.50,
+  "current_total_usd": 5.80,
+  "change_usd": 2.30,
+  "services": [
+    {
+      "service": "Amazon EC2",
+      "previous_cost_usd": 2.00,
+      "current_cost_usd": 3.50,
+      "change_usd": 1.50
+    }
+  ]
+}
 ```
 
+## 🔐 Security
 
+- Real billing reports are stored in a private S3 bucket.
+- S3 public access blocking remains enabled for the private reports bucket.
+- IAM permissions are scoped to the required operations.
+- The public dashboard uses fictional sample data only.
+- AWS credentials are not included in the source code.
+- The Lambda function uses its IAM execution role instead of locally stored access keys.
 
-Use an IAM identity with only the permissions required for this project. Never commit credentials or paste secret keys into source code.
+## 🖥️ Demo Dashboard
 
+The dashboard is hosted as a static website on Amazon S3 and displays fictional sample spending data.
 
+**Important:** The demo dashboard is separate from the real reports. It does not expose actual account billing data.
 
-\## Run the report
+## 🧪 Testing
 
+The project includes Python unit tests for the local reporting script.
 
+The Lambda function was also tested in AWS, and a generated JSON report was verified in the private S3 bucket.
 
-```bash
+## 💡 What I Learned
 
-python weekly\_report.py
+- Using Boto3 to interact with AWS services.
+- Retrieving AWS billing data with Cost Explorer.
+- Building serverless automation with AWS Lambda.
+- Scheduling recurring tasks with EventBridge.
+- Storing reports securely in S3.
+- Applying IAM permissions and separating public demo data from private billing data.
+- Comparing costs across time periods using Python.
 
-```
+## 🚀 Future Improvements
 
+- Send weekly email reports using Amazon SNS.
+- Add budget threshold alerts.
+- Show trends and service-level cost increases in the dashboard.
+- Add automated deployment and testing through GitHub Actions.
+- Add stronger monitoring and error notifications.
 
+## 💰 Cost Considerations
 
-The script fetches cost data from AWS and writes the report to `weekly\_report.json` in the project directory.
+This project uses serverless services, but AWS charges may apply depending on usage, API requests, storage, logging, and account eligibility for free usage allowances. Review AWS Billing regularly and remove unused resources when the project is no longer needed.
 
+## 👤 Author
 
-
-\## Run tests
-
-
-
-```bash
-
-python -m pytest -v
-
-```
-
-
-
-\## Understanding the output
-
-
-
-The report contains:
-
-
-
-\- Previous-period total
-
-\- Current-period total
-
-\- Total difference
-
-\- Per-service costs
-
-\- Percentage changes where calculable
-
-\- A status indicating whether spending increased, decreased, stayed unchanged, or may need investigation
-
-
-
-AWS cost data may be delayed or adjusted. Very small amounts can round to `$0.00`, and credits or billing adjustments can affect net results.
-
-
-
-\## Security and cost considerations
-
-
-
-\- Use restricted IAM permissions rather than root access keys.
-
-\- Keep AWS credentials outside the repository.
-
-\- Review AWS costs and billing alerts regularly.
-
-\- Cost Explorer API usage may incur charges under AWS pricing.
-
-\- Avoid publishing personal billing reports or account-specific information.
-
-
-
-\## Current scope and future improvements
-
-
-
-The current implementation focuses on cost retrieval, weekly comparison, and JSON reporting. Possible future improvements include scheduled reports, notifications for unusual increases, a dashboard, and infrastructure automation.
-
-
-
-\## Learning goals
-
-
-
-This project demonstrates AWS API integration, IAM least privilege, Python automation, JSON reporting, testing, and basic version control.
-
+Built as a hands-on AWS, Python, and cloud-cost-monitoring portfolio project.
